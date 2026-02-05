@@ -6,10 +6,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="antigravity"
 
 # Optimization for RunPod GPUs (A100, RTX 30/40, H100)
-# This ensures CUDA kernels are pre-compiled for these architectures
 ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
 ENV FORCE_CUDA="1"
 ENV MAX_JOBS=1
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="/usr/local/cuda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -46,43 +48,39 @@ RUN git clone -b main https://github.com/microsoft/TRELLIS.2.git . && \
 # Install Python dependencies
 RUN pip install imageio imageio-ffmpeg tqdm easydict opencv-python-headless trimesh transformers gradio==6.0.1 tensorboard pandas lpips zstandard kornia timm runpod==1.7.7 requests Pillow boto3
 
-# Copy specialized local packages if any (o-voxel is in subfolder)
 # Install EasternJournalist/utils3d
 RUN pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8
 
 # --- Install specialized CUDA extensions ---
-
-# 0. Build dependencies
-RUN pip install packaging ninja setuptools wheel
-
-# 1. flash-attn
-RUN MAX_JOBS=1 pip install flash-attn==2.7.3 --no-build-isolation
-
-# 2. nvdiffrast
-RUN git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
-    cd /tmp/nvdiffrast && MAX_JOBS=1 pip install . --no-build-isolation
-
-# 3. nvdiffrec (renderutils branch as per setup.sh)
-RUN git clone -b renderutils https://github.com/JeffreyXiang/nvdiffrec.git /tmp/nvdiffrec && \
-    cd /tmp/nvdiffrec && MAX_JOBS=1 pip install . --no-build-isolation
-
-# 4. CuMesh
-RUN git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh && \
-    cd /tmp/CuMesh && NVCC_FLAGS="--extended-lambda" MAX_JOBS=1 pip install . --no-build-isolation
-
-# 5. FlexGEMM
-RUN git clone --recursive https://github.com/JeffreyXiang/FlexGEMM.git /tmp/FlexGEMM && \
-    cd /tmp/FlexGEMM && MAX_JOBS=1 pip install . --no-build-isolation
-
-# 6. o-voxel (using the one in the repo)
-RUN MAX_JOBS=1 pip install ./o-voxel --no-build-isolation
+# We use a single RUN command to keep the image clean and avoid intermediate layers hitting disk limits
+RUN pip install packaging ninja setuptools wheel && \
+    # 1. flash-attn
+    MAX_JOBS=1 pip install flash-attn==2.7.3 --no-build-isolation && \
+    # 2. nvdiffrast
+    git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
+    cd /tmp/nvdiffrast && MAX_JOBS=1 pip install . --no-build-isolation && \
+    # 3. nvdiffrec
+    git clone -b renderutils https://github.com/JeffreyXiang/nvdiffrec.git /tmp/nvdiffrec && \
+    cd /tmp/nvdiffrec && MAX_JOBS=1 pip install . --no-build-isolation && \
+    # 4. CuMesh
+    git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh && \
+    cd /tmp/CuMesh && NVCC_FLAGS="--extended-lambda" MAX_JOBS=1 pip install . --no-build-isolation && \
+    # 5. FlexGEMM
+    git clone --recursive https://github.com/JeffreyXiang/FlexGEMM.git /tmp/FlexGEMM && \
+    cd /tmp/FlexGEMM && MAX_JOBS=1 pip install . --no-build-isolation && \
+    # 6. o-voxel
+    cd /app && MAX_JOBS=1 pip install ./o-voxel --no-build-isolation && \
+    # Clean up /tmp to save space
+    rm -rf /tmp/*
 
 # Copy the RunPod handler
 COPY runpod_handler.py /app/runpod_handler.py
 
-# Pre-download models to the Docker image (optional but recommended for fast start)
-# This will trigger the download during build phase
-RUN python3 -c "from trellis2.pipelines import Trellis2ImageTo3DPipeline; Trellis2ImageTo3DPipeline.from_pretrained('microsoft/TRELLIS.2-4B')"
+# --- IMPORTANT CHANGE ---
+# We are REMOVING the pre-download from the Dockerfile build process.
+# GitHub Actions runners only have ~14GB of free space.
+# 16GB of weights PLUS Docker layers exceeds this limit, causing the build to fail.
+# Instead, the handler will download the weights on the FIRST run or use a Network Volume.
 
 # Set environment variables
 ENV PYTHONPATH="/app"
