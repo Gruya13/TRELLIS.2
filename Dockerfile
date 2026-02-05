@@ -5,8 +5,8 @@ FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="antigravity"
 
-# Optimization for RunPod GPUs (A100, RTX 30/40, H100)
-ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
+# REDUKOVANO: Samo A100 (8.0) arhitektura da bi build prošao na slabom CI serveru
+ENV TORCH_CUDA_ARCH_LIST="8.0"
 ENV FORCE_CUDA="1"
 ENV MAX_JOBS=1
 ENV CUDA_HOME=/usr/local/cuda
@@ -51,9 +51,9 @@ RUN pip install --no-cache-dir imageio imageio-ffmpeg tqdm easydict opencv-pytho
 # Install EasternJournalist/utils3d
 RUN pip install --no-cache-dir git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8
 
-# --- Install specialized CUDA extensions (Separated for debugging) ---
+# --- Install specialized CUDA extensions ---
 
-# 1. flash-attn (Try to use pre-built if possible to save CI time/RAM)
+# 1. flash-attn
 RUN MAX_JOBS=1 pip install --no-cache-dir flash-attn==2.7.3 --no-build-isolation
 
 # 2. nvdiffrast
@@ -64,12 +64,11 @@ RUN git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
 RUN git clone -b renderutils https://github.com/JeffreyXiang/nvdiffrec.git /tmp/nvdiffrec && \
     cd /tmp/nvdiffrec && MAX_JOBS=1 pip install . --no-cache-dir --no-build-isolation && rm -rf /tmp/nvdiffrec
 
-# 4. CuMesh - This is the most likely culprit
+# 4. CuMesh - Dodate verbose komande za debug
 RUN git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh && \
     cd /tmp/CuMesh && \
-    # Setting flags directly in environment to be sure
     export NVCC_FLAGS="--extended-lambda" && \
-    MAX_JOBS=1 pip install . --no-cache-dir --no-build-isolation && \
+    MAX_JOBS=1 pip install . -v --no-cache-dir --no-build-isolation && \
     rm -rf /tmp/CuMesh
 
 # 5. FlexGEMM
