@@ -47,8 +47,10 @@ RUN pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e402
 # --- Install specialized CUDA extensions ---
 
 # 1. flash-attn
-# Pre-built wheel for 2.7.3 might be available or we build it
-RUN pip install flash-attn==2.7.3 --no-build-isolation
+# Pre-downloading packaging and ninja which are often required for flash-attn
+RUN pip install packaging ninja
+# Using MAX_JOBS=1 to avoid OOM on CI runners during compilation
+RUN MAX_JOBS=1 pip install flash-attn==2.7.3 --no-build-isolation
 
 # 2. nvdiffrast
 RUN git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
