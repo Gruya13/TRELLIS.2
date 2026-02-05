@@ -23,6 +23,9 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 pipeline = None
 envmap = None
 
+# Configurable model path (can be a Network Volume or local path)
+DEFAULT_MODEL_PATH = os.environ.get('MODEL_PATH', 'microsoft/TRELLIS.2-4B')
+
 # S3 Configuration from Environment Variables
 S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY_ID')
 S3_SECRET_KEY = os.environ.get('S3_SECRET_ACCESS_KEY')
@@ -63,8 +66,8 @@ def upload_to_s3(file_data, file_name, content_type='application/octet-stream'):
 def load_models():
     global pipeline, envmap
     if pipeline is None:
-        print("Loading TRELLIS.2-4B model...")
-        pipeline = Trellis2ImageTo3DPipeline.from_pretrained("microsoft/TRELLIS.2-4B")
+        print(f"Loading TRELLIS.2-4B model from {DEFAULT_MODEL_PATH}...")
+        pipeline = Trellis2ImageTo3DPipeline.from_pretrained(DEFAULT_MODEL_PATH)
         pipeline.cuda()
     
     if envmap is None:

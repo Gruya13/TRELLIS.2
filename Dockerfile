@@ -5,6 +5,12 @@ FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="antigravity"
 
+# Optimization for RunPod GPUs (A100, RTX 30/40, H100)
+# This ensures CUDA kernels are pre-compiled for these architectures
+ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
+ENV FORCE_CUDA="1"
+ENV MAX_JOBS=1
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
