@@ -91,7 +91,14 @@ def handler(job):
     """
     job_input = job["input"]
     image_src = job_input.get("image")
-    texture_size = job_input.get("texture_size", 2048) # Default to 2048 for better performance on serverless
+    
+    # Advanced Parameters
+    texture_size = job_input.get("texture_size", 2048)
+    seed = job_input.get("seed", -1)
+    ss_guidance_scale = job_input.get("ss_guidance_scale", 7.5)
+    ss_steps = job_input.get("ss_steps", 12)
+    slat_guidance_scale = job_input.get("slat_guidance_scale", 3.0)
+    slat_steps = job_input.get("slat_steps", 12)
     
     if not image_src:
         return {"error": "No image input provided"}
@@ -108,8 +115,15 @@ def handler(job):
         load_models()
 
         # 2. Run Inference
-        print("Generating 3D model...")
-        outputs = pipeline.run(image)
+        print(f"Generating 3D model (Seed: {seed})...")
+        outputs = pipeline.run(
+            image,
+            seed=seed,
+            ss_guidance_scale=ss_guidance_scale,
+            ss_steps=ss_steps,
+            slat_guidance_scale=slat_guidance_scale,
+            slat_steps=slat_steps
+        )
         mesh = outputs[0]
         mesh.simplify(16777216) # nvdiffrast limit
 
