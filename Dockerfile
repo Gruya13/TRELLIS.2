@@ -33,10 +33,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Upgrade pip
-RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install PyTorch with CUDA 12.4 support
-RUN pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+RUN pip install --no-cache-dir torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
 
 # Set working directory
 WORKDIR /app
@@ -46,41 +46,41 @@ RUN git clone -b main https://github.com/microsoft/TRELLIS.2.git . && \
     git submodule update --init --recursive
 
 # Install Python dependencies
-RUN pip install imageio imageio-ffmpeg tqdm easydict opencv-python-headless trimesh transformers gradio==6.0.1 tensorboard pandas lpips zstandard kornia timm runpod==1.7.7 requests Pillow boto3
+RUN pip install --no-cache-dir imageio imageio-ffmpeg tqdm easydict opencv-python-headless trimesh transformers gradio==6.0.1 tensorboard pandas lpips zstandard kornia timm runpod==1.7.7 requests Pillow boto3 packaging ninja
 
 # Install EasternJournalist/utils3d
-RUN pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8
+RUN pip install --no-cache-dir git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8
 
-# --- Install specialized CUDA extensions ---
-# We use a single RUN command to keep the image clean and avoid intermediate layers hitting disk limits
-RUN pip install packaging ninja setuptools wheel && \
-    # 1. flash-attn
-    MAX_JOBS=1 pip install flash-attn==2.7.3 --no-build-isolation && \
-    # 2. nvdiffrast
-    git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
-    cd /tmp/nvdiffrast && MAX_JOBS=1 pip install . --no-build-isolation && \
-    # 3. nvdiffrec
-    git clone -b renderutils https://github.com/JeffreyXiang/nvdiffrec.git /tmp/nvdiffrec && \
-    cd /tmp/nvdiffrec && MAX_JOBS=1 pip install . --no-build-isolation && \
-    # 4. CuMesh
-    git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh && \
-    cd /tmp/CuMesh && NVCC_FLAGS="--extended-lambda" MAX_JOBS=1 pip install . --no-build-isolation && \
-    # 5. FlexGEMM
-    git clone --recursive https://github.com/JeffreyXiang/FlexGEMM.git /tmp/FlexGEMM && \
-    cd /tmp/FlexGEMM && MAX_JOBS=1 pip install . --no-build-isolation && \
-    # 6. o-voxel
-    cd /app && MAX_JOBS=1 pip install ./o-voxel --no-build-isolation && \
-    # Clean up /tmp to save space
-    rm -rf /tmp/*
+# --- Install specialized CUDA extensions (Separated for debugging) ---
+
+# 1. flash-attn (Try to use pre-built if possible to save CI time/RAM)
+RUN MAX_JOBS=1 pip install --no-cache-dir flash-attn==2.7.3 --no-build-isolation
+
+# 2. nvdiffrast
+RUN git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
+    cd /tmp/nvdiffrast && MAX_JOBS=1 pip install . --no-cache-dir --no-build-isolation && rm -rf /tmp/nvdiffrast
+
+# 3. nvdiffrec
+RUN git clone -b renderutils https://github.com/JeffreyXiang/nvdiffrec.git /tmp/nvdiffrec && \
+    cd /tmp/nvdiffrec && MAX_JOBS=1 pip install . --no-cache-dir --no-build-isolation && rm -rf /tmp/nvdiffrec
+
+# 4. CuMesh - This is the most likely culprit
+RUN git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh && \
+    cd /tmp/CuMesh && \
+    # Setting flags directly in environment to be sure
+    export NVCC_FLAGS="--extended-lambda" && \
+    MAX_JOBS=1 pip install . --no-cache-dir --no-build-isolation && \
+    rm -rf /tmp/CuMesh
+
+# 5. FlexGEMM
+RUN git clone --recursive https://github.com/JeffreyXiang/FlexGEMM.git /tmp/FlexGEMM && \
+    cd /tmp/FlexGEMM && MAX_JOBS=1 pip install . --no-cache-dir --no-build-isolation && rm -rf /tmp/FlexGEMM
+
+# 6. o-voxel
+RUN cd /app && MAX_JOBS=1 pip install ./o-voxel --no-cache-dir --no-build-isolation
 
 # Copy the RunPod handler
 COPY runpod_handler.py /app/runpod_handler.py
-
-# --- IMPORTANT CHANGE ---
-# We are REMOVING the pre-download from the Dockerfile build process.
-# GitHub Actions runners only have ~14GB of free space.
-# 16GB of weights PLUS Docker layers exceeds this limit, causing the build to fail.
-# Instead, the handler will download the weights on the FIRST run or use a Network Volume.
 
 # Set environment variables
 ENV PYTHONPATH="/app"
