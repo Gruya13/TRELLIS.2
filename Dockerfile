@@ -52,27 +52,27 @@ RUN pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e402
 
 # --- Install specialized CUDA extensions ---
 
+# 0. Build dependencies
+RUN pip install packaging ninja setuptools wheel
+
 # 1. flash-attn
-# Pre-downloading packaging and ninja which are often required for flash-attn
-RUN pip install packaging ninja
-# Using MAX_JOBS=1 to avoid OOM on CI runners during compilation
 RUN MAX_JOBS=1 pip install flash-attn==2.7.3 --no-build-isolation
 
 # 2. nvdiffrast
 RUN git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast && \
-    MAX_JOBS=1 pip install /tmp/nvdiffrast --no-build-isolation
+    cd /tmp/nvdiffrast && MAX_JOBS=1 pip install . --no-build-isolation
 
 # 3. nvdiffrec (renderutils branch as per setup.sh)
 RUN git clone -b renderutils https://github.com/JeffreyXiang/nvdiffrec.git /tmp/nvdiffrec && \
-    MAX_JOBS=1 pip install /tmp/nvdiffrec --no-build-isolation
+    cd /tmp/nvdiffrec && MAX_JOBS=1 pip install . --no-build-isolation
 
 # 4. CuMesh
 RUN git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh && \
-    MAX_JOBS=1 pip install /tmp/CuMesh --no-build-isolation
+    cd /tmp/CuMesh && NVCC_FLAGS="--extended-lambda" MAX_JOBS=1 pip install . --no-build-isolation
 
 # 5. FlexGEMM
 RUN git clone --recursive https://github.com/JeffreyXiang/FlexGEMM.git /tmp/FlexGEMM && \
-    MAX_JOBS=1 pip install /tmp/FlexGEMM --no-build-isolation
+    cd /tmp/FlexGEMM && MAX_JOBS=1 pip install . --no-build-isolation
 
 # 6. o-voxel (using the one in the repo)
 RUN MAX_JOBS=1 pip install ./o-voxel --no-build-isolation
