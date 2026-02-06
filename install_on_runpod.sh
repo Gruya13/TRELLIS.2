@@ -23,6 +23,7 @@ apt-get update && apt-get install -y ffmpeg libsm6 libxext6 libgl1-mesa-glx libj
 # 4. Instalacija PyTorch-a i osnovnih paketa
 echo "🔥 Instaliram PyTorch i zavisnosti (ovo može potrajati)..."
 pip install --upgrade pip
+pip install setuptools wheel
 pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
 pip install imageio imageio-ffmpeg tqdm easydict opencv-python-headless trimesh transformers gradio==6.0.1 tensorboard pandas lpips zstandard kornia timm runpod==1.7.7 requests Pillow boto3 packaging ninja
 
