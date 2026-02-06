@@ -23,8 +23,8 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 pipeline = None
 envmap = None
 
-# Configurable model path (can be a Network Volume or local path)
-DEFAULT_MODEL_PATH = os.environ.get('MODEL_PATH', 'microsoft/TRELLIS.2-4B')
+# Configurable model path (Preporučeno: Network Volume za brzi start)
+DEFAULT_MODEL_PATH = os.environ.get('MODEL_PATH', '/runpod-volume/weights/TRELLIS.2-4B')
 
 # S3 Configuration from Environment Variables
 S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY_ID')
@@ -66,8 +66,16 @@ def upload_to_s3(file_data, file_name, content_type='application/octet-stream'):
 def load_models():
     global pipeline, envmap
     if pipeline is None:
-        print(f"Loading TRELLIS.2-4B model from {DEFAULT_MODEL_PATH}...")
-        pipeline = Trellis2ImageTo3DPipeline.from_pretrained(DEFAULT_MODEL_PATH)
+        # Proveri da li model postoji na Volume-u, ako ne, skini ga (samo prvi put)
+        if not os.path.exists(DEFAULT_MODEL_PATH):
+            print(f"Model nije pronađen na {DEFAULT_MODEL_PATH}. Preuzimam sa HuggingFace-a...")
+            # Ovo će sačuvati model na volume za sledeći put
+            pipeline = Trellis2ImageTo3DPipeline.from_pretrained("microsoft/TRELLIS.2-4B")
+            pipeline.save_pretrained(DEFAULT_MODEL_PATH)
+        else:
+            print(f"Učitavam model sa Network Volume-a: {DEFAULT_MODEL_PATH}")
+            pipeline = Trellis2ImageTo3DPipeline.from_pretrained(DEFAULT_MODEL_PATH)
+        
         pipeline.cuda()
     
     if envmap is None:

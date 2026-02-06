@@ -81,12 +81,12 @@ with gr.Blocks(title="TRELLIS.2 Master") as demo:
             input_img = gr.Image(type="pil", label="Ulazna slika")
             
             with gr.Accordion("Napredna podešavanja", open=False):
-                seed = gr.Number(value=-1, label="Seed (-1 za nasumično)", precision=0)
-                ss_guidance = gr.Slider(1.0, 15.0, value=7.5, step=0.5, label="SS Guidance Scale")
-                ss_steps = gr.Slider(1, 50, value=12, step=1, label="SS Steps")
-                slat_guidance = gr.Slider(1.0, 10.0, value=3.0, step=0.5, label="SLAT Guidance Scale")
-                slat_steps = gr.Slider(1, 50, value=12, step=1, label="SLAT Steps")
-                tex_size = gr.Radio([1024, 2048, 4096], value=2048, label="Rezolucija tekstura")
+                seed = gr.Number(value=-1, label="Seed", precision=0, info="Seme (Seed) omogućava ponavljanje iste generacije. -1 za nasumično.")
+                ss_guidance = gr.Slider(1.0, 15.0, value=7.5, step=0.5, label="SS Guidance Scale", info="Skala vođenja strukture. Veće vrednosti vernije prate oblik ulazne slike.")
+                ss_steps = gr.Slider(1, 50, value=12, step=1, label="SS Steps", info="Broj koraka za generisanje osnovne strukture (Sparse Structure).")
+                slat_guidance = gr.Slider(1.0, 10.0, value=3.0, step=0.5, label="SLAT Guidance Scale", info="Skala vođenja detalja i tekstura.")
+                slat_steps = gr.Slider(1, 50, value=12, step=1, label="SLAT Steps", info="Broj koraka za generisanje detaljnih latentsa (Structured Latent).")
+                tex_size = gr.Radio([1024, 2048, 4096], value=2048, label="Rezolucija tekstura", info="Veličina izlaznih tekstura u pikselima.")
             
             btn = gr.Button("GENERISI 3D MODEL", variant="primary")
             
