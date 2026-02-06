@@ -24,18 +24,26 @@ source venv/bin/activate
 apt-get update && apt-get install -y ffmpeg libsm6 libxext6 libgl1 libjpeg-dev ninja-build wget
 
 # 4. Instalacija PyTorch-a i osnovnih paketa
-echo "🔥 Instaliram PyTorch i zavisnosti (ovo može potrajati)..."
+echo "🔥 Podešavam zavisnosti..."
 pip install --upgrade pip
 pip install setuptools wheel
-pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+
+# Koristimo TMPDIR na istom disku (workspace) da izbegnemo Cross-device link error
+mkdir -p /workspace/tmp
+export TMPDIR=/workspace/tmp
+
+# Instalacija zavisnosti (bez forsiranja stare verzije torcha ako već postoji noviji)
 pip install imageio imageio-ffmpeg tqdm easydict opencv-python-headless trimesh transformers gradio==6.0.1 tensorboard pandas lpips zstandard kornia timm runpod==1.7.7 requests Pillow boto3 packaging ninja
 
 # 5. Instalacija CUDA ekstenzija
-echo "🛠️ Kompajliram CUDA ekstenzije (CuMesh, Flash-Attn...)..."
+echo "🛠️ Kompajliram CUDA ekstenzije..."
 export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
 export MAX_JOBS=4
 
-pip install flash-attn==2.7.3 --no-build-isolation
+# Specifična instalacija flash-attn preko gotovog wheel-a da izbegnemo build probleme
+echo "--- flash-attn ---"
+pip install flash_attn-2.7.3+cu12torch2.6cxx11abiFALSE-cp312-cp312-linux_x86_64.whl || \
+pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.3/flash_attn-2.7.3+cu12torch2.6cxx11abiFALSE-cp312-cp312-linux_x86_64.whl
 
 echo "--- nvdiffrast ---"
 git clone https://github.com/NVlabs/nvdiffrast.git /tmp/nvdiffrast || true
