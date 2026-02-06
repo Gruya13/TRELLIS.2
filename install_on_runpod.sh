@@ -18,7 +18,7 @@ fi
 source venv/bin/activate
 
 # 3. Instalacija sistemskih zavisnosti (za svaki slučaj)
-apt-get update && apt-get install -y ffmpeg libsm6 libxext6 libgl1-mesa-glx libjpeg-dev ninja-build wget
+apt-get update && apt-get install -y ffmpeg libsm6 libxext6 libgl1 libjpeg-dev ninja-build wget
 
 # 4. Instalacija PyTorch-a i osnovnih paketa
 echo "🔥 Instaliram PyTorch i zavisnosti (ovo može potrajati)..."
