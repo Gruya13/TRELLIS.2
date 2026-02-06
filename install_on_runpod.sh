@@ -10,11 +10,14 @@ if [ ! -d "TRELLIS.2" ]; then
 fi
 cd TRELLIS.2
 
-# 2. Kreiranje venv-a ako ne postoji
-if [ ! -d "venv" ]; then
-    echo "📦 Kreiram virtuelno okruženje..."
-    python -m venv venv
+# 2. Kreiranje venv-a (Čista instalacija)
+if [ -d "venv" ]; then
+    echo "🗑️ Brišem staro virtuelno okruženje..."
+    rm -rf venv
 fi
+
+echo "📦 Kreiram novo virtuelno okruženje..."
+python -m venv venv
 source venv/bin/activate
 
 # 3. Instalacija sistemskih zavisnosti (za svaki slučaj)
