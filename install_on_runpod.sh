@@ -55,7 +55,10 @@ pip install /tmp/nvdiffrec --no-build-isolation
 
 echo "--- CuMesh ---"
 git clone --recursive https://github.com/JeffreyXiang/CuMesh.git /tmp/CuMesh || true
-cd /tmp/CuMesh && NVCC_FLAGS="--extended-lambda" pip install . --no-build-isolation
+cd /tmp/CuMesh
+export NVCC_APPEND_FLAGS="--extended-lambda"
+export NVCC_PREPEND_FLAGS="--extended-lambda"
+pip install . -v --no-cache-dir --no-build-isolation
 cd /workspace/TRELLIS.2
 
 echo "--- FlexGEMM ---"
