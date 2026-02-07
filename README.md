@@ -1,5 +1,7 @@
 ![](assets/teaser.webp)
 
+## RunPod Status: Waiting for initial build...
+
 # Native and Compact Structured Latents for 3D Generation
 
 <a href="https://arxiv.org/abs/2512.14692"><img src="https://img.shields.io/badge/Paper-Arxiv-b31b1b.svg" alt="Paper"></a>
